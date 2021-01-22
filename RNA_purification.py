@@ -9,6 +9,17 @@ owner: Vilhelm
 date: 2021.01.13
 
 URL for kit: https://www.qiagen.com/gb/shop/automated-solutions/sample-disruption/rneasy-mini-kit/
+
+
+Optimizations:
+- Add a temperature module to so the incbuation can be done at 37C
+- Make periodic mixing using 1000p while incubating. 
+
+
+Questions 
+- Can the temperature module drop from 37 to 20-25 degrees fast enough?
+- Can we get consistent results?
+- Do we see problems with RNA contamination?
 """
 
 
@@ -30,8 +41,8 @@ def run(protocol: protocol_api.ProtocolContext):
 	sample_plate = protocol.load_labware('opentrons_24_tuberack_eppendorf_1.5ml_safelock_snapcap', '11')
 	reagents_plate = protocol.load_labware('opentrons_24_aluminumblock_generic_2ml_screwcap', '9') 
     # tips
-	tip_rack_1 = protocol.load_labware('opentrons_96_filtertiprack_20ul', '2')
-	tiprack_1000_1 = protocol.load_labware('geb_96_tiprack_1000ul', '1')
+	tip_rack_1 = protocol.load_labware('opentrons_96_filtertiprack_20ul', '1')
+	tiprack_1000_1 = protocol.load_labware('geb_96_tiprack_1000ul', '2')
 
     ## 4. pipettes
 	pipette_p20 = protocol.load_instrument('p20_single_gen2', 'right', tip_racks=[tip_rack_1])
@@ -40,7 +51,7 @@ def run(protocol: protocol_api.ProtocolContext):
    
     ################################ CHANGE THIS NUMBER TO FIT NUMBER OF SAMPLES ##########
     # max number of samples 12
-	number_of_samples = 2 
+	number_of_samples = 4 
 	## OPS make an error command if number_of_samples < 12
 	################################3######################################################
 
@@ -63,7 +74,7 @@ def run(protocol: protocol_api.ProtocolContext):
 
 	
 	# Lysozyme to Master Mix 1
-	ul_amount = (number_of_samples+1)*3
+	ul_amount = (number_of_samples+2)*3
 	# ul_amount MUST BE <20ul. Will work if less than 12 samples are run:
 	if ul_amount > 20:
 		ul_amount_half = ul_amount / 2
@@ -84,7 +95,7 @@ def run(protocol: protocol_api.ProtocolContext):
 
 
 	# Proteinase K to Master Mix 1
-	ul_amount = number_of_samples+1
+	ul_amount = number_of_samples+2
 	# ul_amount MUST BE <20ul
 	if ul_amount > 20:
 		ul_amount_half = ul_amount / 2
@@ -105,7 +116,7 @@ def run(protocol: protocol_api.ProtocolContext):
 
 
 	# SDS added to Master Mix 1
-	ul_amount = (number_of_samples+1)*3
+	ul_amount = (number_of_samples+2)*3
 	# ul_amount MUST BE <20ul
 	if ul_amount > 20:
 		ul_amount_half = ul_amount / 2
@@ -144,6 +155,7 @@ def run(protocol: protocol_api.ProtocolContext):
 	# pause for 20 minutes - the time it take for each sample to be mixed with Master mix 1(1min)
 	# subtract the time it takes to make Master mix 2(2min)
 	protocol.delay(minutes=(20-number_of_samples-2)) 
+	#protocol.delay(minutes=(1)) 
 
 
 	## Add DNAse I to Master mix 2
@@ -154,7 +166,7 @@ def run(protocol: protocol_api.ProtocolContext):
 		aliquote = ul_amount / rounds
 		for n in range(rounds):
 			pipette_p20.pick_up_tip()
-			pipette_p20.aspirate(aliquote, reagents_plate['A5'])
+			pipette_p20.aspirate(aliquote, reagents_plate['A6'])
 			pipette_p20.dispense(aliquote, reagents_plate['D5'])
 			pipette_p20.drop_tip()
 	else:
@@ -168,7 +180,7 @@ def run(protocol: protocol_api.ProtocolContext):
 	# ul_amount MUST BE <1000ul
 	ul_amount = (number_of_samples+1)*20
 	pipette_p1000.pick_up_tip()
-	pipette_p1000.aspirate(ul_amount, reservoir['A1'])
+	pipette_p1000.aspirate(ul_amount, reagents_plate['A6'])
 	pipette_p1000.dispense(ul_amount, reagents_plate['D5'])
 	pipette_p1000.mix(5, 25)
 	pipette_p1000.drop_tip()
@@ -188,6 +200,11 @@ def run(protocol: protocol_api.ProtocolContext):
 
 		pipette_p1000.mix(2, 25)
 		pipette_p1000.drop_tip()
+
+
+	# pause for 10 min incubation
+	protocol.delay(minutes=(10))
+	#protocol.delay(minutes=(1))  
 
 
 	# add RLT buffer to sample
